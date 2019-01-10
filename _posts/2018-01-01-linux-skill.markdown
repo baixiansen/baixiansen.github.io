@@ -1,0 +1,272 @@
+---
+layout:     post
+title:      "Linux日常使用技巧集"
+subtitle:   " \"Hello SpringBoot, Hello Swagger\""
+date:       2018-01-01 12:00:00
+author:     "Mr.bai"
+header-img: "img/post-bg-css.jpg"
+catalog: true
+tags:
+    - linux
+---
+
+> “Hello everyone! ”
+
+
+## 常用命令
+
+* 统计 IP 连接数
+
+```Shell
+$ netstat -ntu | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -rn | head -10
+```
+
+## 操作系统
+
+### 查看系统版本
+
+在安装环境或者软件时，我们常常需要知道所在操作系统的版本信息，这里列举几种查看内核和发行版本信息的方法，更多见 [查看 Linux 系统版本](http://blog.jinwork.vip/2017/11/20/linux-version/)。
+
+#### 内核版本
+
+* uname命令
+
+```Shell
+$ uname -a
+Linux fhb-6.6 2.6.32-642.13.1.el6.i686
+```
+
+* /proc/version文件
+
+```Shell
+$ cat /proc/version 
+Linux version 2.6.32-642.13.1.el6.i686
+```
+
+#### 发行版本
+
+* lsb_release命令
+
+```Shell
+$ lsb_release -a
+LSB Version:	:base-4.0-ia32:base-4.0-noarch:core-4.0-ia32
+Distributor ID:	CentOS
+Release:	6.8
+```
+
+* /etc/issue文件
+
+```Shell
+$ cat /etc/redhat-release
+CentOS release 6.8 (Final)
+```
+
+### 启用Swap分区
+
+在遇到内存容量瓶颈时，我们就可以尝试启用 Swap 分区。使用文件（还可以磁盘分区）作为 Swap 分区时，具体步骤如下：
+
+1、 创建 Swap 分区的文件
+
+```Shell
+# bs*count为文件大小
+$ dd if=/dev/zero of=/root/swapfile bs=1M count=1024
+```
+
+2、 格式化为交换分区文件
+
+```Shell
+$ mkswap /root/swapfile
+```
+
+3、 启用交换分区
+
+```Shell
+$ swapon /root/swapfile
+```
+
+4、 开机自启用 Swap 分区
+
+在`/etc/fstab`文件中添加如下内容：
+
+```Shell
+/root/swapfile swap swap defaults 0 0
+```
+
+最后，查看系统的 Swap 分区信息：
+
+```Shell
+$ free -h
+       total   used    free   shared  buff/cache   available
+Mem:   1.7G    729M    252M   9.2M    714M         763M
+Swap:  1.0G    0B      1.0G
+```
+
+### 免密码使用sudo
+
+以下两种需求：
+1. 开发中经常会使用到 sudo 命令，为了避免频繁输入密码的麻烦；
+2. 脚本中使用到 sudo 命令，怎么输入密码？；
+
+这些，都可以通过将用户加入 sudoers 来解决，当然情况 2 也可以使用`echo "passwd"|sudo -S cmd`，从标准输入读取密码。
+
+sudoers 配置文件为`/etc/sudoers`，sudo 命令操作权限配置内容如下：
+
+```bash
+# 授权用户/组    主机名=（允许转换至的用户）   NOPASSWD:命令动作
+root ALL=(ALL) ALL
+```
+
+[授权格式](#) 说明：
+
+* 第一个字段为授权用户或组，例如 root；
+* 第二个字段为来源，() 中为允许转换至的用户，= 左边为主机名；
+* 第三个字段为命令动作，多个命令以`,`号分割；
+
+因此，我的用户为`fhb`，授权步骤如下：
+
+```bash
+# 1. 执行visudo命令，操作的文件就是/etc/sudoers
+$ sudo visudo
+# 2. 追加内容
+fhb ALL=(root) NOPASSWD: /usr/sbin/service,/usr/local/php/bin/php,/usr/bin/vim
+# 3. Ctrl+O保存并按Enter
+```
+
+然后，使用`sudo service ssh restart`命令测试 OK。
+
+### Yum更新排除指定软件
+
+有时候我们使用 yum 安装的软件，由于配置向后兼容性等问题，我们并不希望这些软件（filebeat 和 logstash）在使用`update`时，被不经意间被自动更新。这时，可以使用如下方法解决：
+
+* 临时
+
+通过`-x`或`--exclude`参数指定需要排除的包名称，多个包名称使用空格分隔。例如：
+
+```Shell
+# --exclude同样
+$ yum -x filebeat logstash update
+```
+
+* 永久
+
+在 yum 配置文件`/etc/yum.conf`中，追加`exclude`配置项。例如：
+
+```Ini
+# 需排序的包名称
+exclude=filebeat logstash
+```
+
+再次使用`yum update`命令，就不会自动更新指定的软件包了。
+
+```Shell
+$ yum update
+No Packages marked for Update
+```
+
+## ssh
+
+### 强制踢出其他登录用户
+
+在某些情况下，需要强制踢出系统其他登录用户，比如遇到非法用户登录。查询当前登陆用户：
+
+```Shell
+# 当前用户
+$ whoami
+root
+# 当前所有用户
+$ ps -ef | grep 'pts'
+root      4752  4727  0 00:09 pts/0    00:00:00 su www
+www       4755  4752  0 00:09 pts/0    00:00:00 bash
+```
+
+剔除非法登陆用户：
+
+```Shell
+$ kill -9 4755
+```
+
+
+
+### 建立隧道实现端口转发
+
+在可以使用 ssh 情况下，为了能进行线上调试，我们可以使用 ssh 隧道建立端口映射。
+
+例如，线上远程目标机器 ip：10.1.1.123、端口：3303；映射到本地 33031 端口。命令如下：
+
+```Shell
+# [主机ip]:[端口]:[主机ip]:[远程目标机器端口] [远程目标机器ip]
+ssh -L 127.0.0.1:33031:127.0.0.1:3303 10.1.1.123
+```
+
+> 该命令操作后，只能通过`127.0.0.1`访问。若想全网段访问，需要将第一个主机 ip 更改为`0.0.0.0`，同时需要在`/etc/ssh/sshd_config`增加`GatewayPorts yes`的配置项。
+
+## 常用工具
+
+### Strace调试
+
+在调试程序时，我们会遇到一些系统层面的错误问题，一般都不易发现，这时可以使用 strace 来跟踪系统调用的过程，方便快速定位和解决问题。
+
+```C
+$ strace crontab.sh
+execve("./crontab.sh", ["./crontab.sh"], [/* 29 vars */]) = 0
+brk(0)                                  = 0x106a000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0434160000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/etc/ld.so.cache", O_RDONLY)      = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=53434, ...}) = 0
+mmap(NULL, 53434, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f0434152000
+close(3)                                = 0
+open("/lib64/libc.so.6", O_RDONLY)      = 3
+... ...
+```
+
+
+
+### 彩色的命令行
+
+在脚本或者代码中，有时候需要在控制终端输出醒目的提示信息，以便引起我们的关注。其实，在 Linux 终端下很容易就能搞定，如下：
+
+<!-- ![彩色的命令行](https://img1.fanhaobai.com/2018/01/linux-skill/7bb99049-49bd-427b-a338-3afff4268fb3.jpg) -->
+
+实现的源代码，内容为：
+
+```Bash
+echo -e "\033[1;30m Hello World. \033[0m [高亮]"
+echo -e "\033[0;31m Hello World. \033[0m [关闭属性]"
+echo -e "\033[4;32m Hello World. \033[0m [下划线]"
+echo -e "\033[5;33m Hello World. \033[0m [闪烁]"
+echo -e "\033[7;34m Hello World. \033[0m [反显]"
+echo -e "\033[8;35m Hello World. \033[0m [消隐]"
+echo -e "\033[0;36;40m Hello World."
+echo -e "\033[0;37;41m Hello World."
+```
+
+> `\033`是 Esc 键对应的 ASCII 码（27=/033=0x1B），表示后面的内容具有特殊含义，类似表述有`^[`以及`/e`，而`\033[0m`表示清除格式控制。
+
+输出格式的规则，可表示为`\033[特殊格式;前景色;背景色m`，主要分为 [颜色](#) 和 [格式](#) 两类规则。
+
+* 颜色
+
+主要包括 [前景色](#) 和 [背景色](#)，前景色范围为`30~39`，背景色范围为`40~49`（前景色对应颜色值 +10）。前景色颜色代码表如下：
+
+<div><span style="color:black;">黑   = "\033[30m"</span>
+<span style="color:red;">红   = "\033[31m"</span>
+<span style="color:green;">绿   = "\033[32m"</span>
+<span style="color:yellow;">黄   = "\033[33m"</span>
+<span style="color:blue;">蓝   = "\033[34m"</span>
+<span style="color:purple;">紫   = "\033[35m"</span>
+<span style="color:cyan;">青 = "\033[36m"</span>
+<span style="color:white;">白   = "\033[37m"</span></div>
+
+* 格式
+
+|  表达式   |     格式     |
+| -------- | ------------ |
+| \033[0m |  关闭所有属性 |
+| \033[1m |    高亮度    |
+| \033[4m |    下划线    |
+| \033[5m |     闪烁     |
+| \033[7m |     反显     |
+| \033[8m |     消隐     |
+
+
