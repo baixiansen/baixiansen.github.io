@@ -13,11 +13,11 @@ future: true
 
 # SNS settings
 RSS: false
-weibo_username:     baixiansen
+weibo_username:     1765294077
 zhihu_username:     baixiansen
 github_username:    baixiansen
 twitter_username:   baixiansen
-#facebook_username:  Mcyl
+#facebook_username:  baixiansen
 #linkedin_username:  firstname-lastname-idxxxx
 
 
@@ -59,7 +59,7 @@ kramdown:
 
 
 # Disqus settings
-disqus_username: Mcyl
+disqus_username: baixiansen
 
 # Netease settings
 netease_comment: false

@@ -1,13 +1,13 @@
 > 写写代码，做做设计，  
 > 离开世界之前，一切都是过程。
 
-Hey，我是白先森，主业,码农一枚；副业，偶尔写博客，于是就有了”[Mr.bai](https://baixiansen.github.io)“。躬耕于魔都，苟全性命于泛微，不求闻达于领导，多出没于[博客](https://baixiansen.github.io)、[Github](https://baixiansen.github.io) 等地带，绝招尚在开发中。
+Hey，我是白锦，主业,码农一枚；副业，偶尔写博客，于是就有了”[Mr.bai](https://baixiansen.github.io)“。躬耕于魔都，苟全性命于泛微，不求闻达于领导，多出没于[博客](https://baixiansen.github.io)、[Github](https://baixiansen.github.io) 等地带，绝招尚在开发中。
 
-佛系PHP攻城师一枚。还比较喜欢Linux、JavaScript、SpringBoot、SpringCloud、Vue以及Struts2等。目前关注”使用linux,shell编程”相关的知识。
+佛系PHP攻城师一枚。还比较喜欢Linux、JavaScript、laravel、angular、Vue以及Struts2等。目前关注”使用linux,shell编程”相关的知识。
 
 喜欢读书（尤其喜欢历史、经济、文学、数学、IT相关等）；喜欢旅游；喜欢摄影；喜欢音乐；喜欢烹饪（水平还不错哦）；喜欢骑自行车瞎逛等等。
 
-[白锦的简历](https://baixiansen.github.io/demo/aboutme/index.html)
+[白锦的简历](http://47.101.197.225/白锦的简历.doc)
 
 ##### Talks
 
